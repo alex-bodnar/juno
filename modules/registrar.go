@@ -69,6 +69,11 @@ import (
 	"github.com/forbole/bdjuno/v2/modules/vipcoin/chain/accounts"
 	vipcoinaccountssource "github.com/forbole/bdjuno/v2/modules/vipcoin/chain/accounts/source"
 	remotevipcoinaccountssource "github.com/forbole/bdjuno/v2/modules/vipcoin/chain/accounts/source/remote"
+
+	walletstypes "git.ooo.ua/vipcoin/chain/x/wallets/types"
+	"github.com/forbole/bdjuno/v2/modules/vipcoin/chain/wallets"
+	vipcoinwalletssource "github.com/forbole/bdjuno/v2/modules/vipcoin/chain/wallets/source"
+	remotevipcoinwalletsssource "github.com/forbole/bdjuno/v2/modules/vipcoin/chain/wallets/source/remote"
 )
 
 // UniqueAddressesParser returns a wrapper around the given parser that removes all duplicated addresses
@@ -122,6 +127,7 @@ func (r *Registrar) BuildModules(ctx registrar.Context) jmodules.Modules {
 	govModule := gov.NewModule(sources.GovSource, authModule, distrModule, mintModule, slashingModule, stakingModule, cdc, db)
 
 	vipcoinAccountsModule := accounts.NewModule(sources.VipcoinAccountsSource, cdc, db)
+	vipcoinWalletsModule := wallets.NewModule(r.parser, sources.VipcoinWalletsSource, cdc, db)
 
 	return []jmodules.Module{
 		messages.NewModule(r.parser, cdc, ctx.Database),
@@ -141,6 +147,7 @@ func (r *Registrar) BuildModules(ctx registrar.Context) jmodules.Modules {
 		stakingModule,
 
 		vipcoinAccountsModule,
+		vipcoinWalletsModule,
 	}
 }
 
@@ -152,6 +159,7 @@ type Sources struct {
 	SlashingSource        slashingsource.Source
 	StakingSource         stakingsource.Source
 	VipcoinAccountsSource vipcoinaccountssource.Source
+	VipcoinWalletsSource  vipcoinwalletssource.Source
 }
 
 func BuildSources(nodeCfg nodeconfig.Config, encodingConfig *params.EncodingConfig) (*Sources, error) {
@@ -224,5 +232,6 @@ func buildRemoteSources(cfg *remote.Details) (*Sources, error) {
 		SlashingSource:        remoteslashingsource.NewSource(source, slashingtypes.NewQueryClient(source.GrpcConn)),
 		StakingSource:         remotestakingsource.NewSource(source, stakingtypes.NewQueryClient(source.GrpcConn)),
 		VipcoinAccountsSource: remotevipcoinaccountssource.NewSource(source, accountstypes.NewQueryClient(source.GrpcConn)),
+		VipcoinWalletsSource:  remotevipcoinwalletsssource.NewSource(source, walletstypes.NewQueryClient(source.GrpcConn)),
 	}, nil
 }
