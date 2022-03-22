@@ -35,7 +35,7 @@ func NewModule(
 	return &Module{
 		cdc:         cdc,
 		db:          db,
-		accountRepo: *accounts.NewRepository(db.Sqlx),
+		accountRepo: *accounts.NewRepository(db.Sqlx, cdc),
 		keeper:      keeper,
 	}
 }
