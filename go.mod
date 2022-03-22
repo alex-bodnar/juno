@@ -3,6 +3,7 @@ module github.com/forbole/bdjuno/v2
 go 1.16
 
 require (
+	git.ooo.ua/vipcoin/chain v0.0.0-20220316134717-a5b00180e001
 	github.com/cosmos/cosmos-sdk v0.42.9
 	github.com/forbole/juno/v2 v2.0.0-20220125161451-4f6319e432a5
 	github.com/go-co-op/gocron v1.12.0
@@ -15,7 +16,7 @@ require (
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.7.0
 	github.com/tendermint/tendermint v0.34.14
-	google.golang.org/grpc v1.42.0
+	google.golang.org/grpc v1.43.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 
