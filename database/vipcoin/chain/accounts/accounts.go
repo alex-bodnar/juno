@@ -10,6 +10,7 @@ import (
 
 	accountstypes "git.ooo.ua/vipcoin/chain/x/accounts/types"
 	"git.ooo.ua/vipcoin/lib/filter"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/forbole/bdjuno/v2/database/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
@@ -18,14 +19,16 @@ import (
 type (
 	// repository - defines a repository for accounts repository
 	Repository struct {
-		db *sqlx.DB
+		db  *sqlx.DB
+		cdc codec.Marshaler
 	}
 )
 
 // NewRepository constructor.
-func NewRepository(db *sqlx.DB) *Repository {
+func NewRepository(db *sqlx.DB, cdc codec.Marshaler) *Repository {
 	return &Repository{
-		db: db,
+		db:  db,
+		cdc: cdc,
 	}
 }
 
@@ -47,7 +50,7 @@ func (r Repository) SaveAccounts(accounts ...*accountstypes.Account) error {
 			(:address, :hash, :public_key, :kinds, :state, :extras, :affiliates, :wallets)`
 
 	for _, acc := range accounts {
-		accountDB, err := toAccountDatabase(acc)
+		accountDB, err := toAccountDatabase(acc, r.cdc)
 		if err != nil {
 			return err
 		}
@@ -120,7 +123,7 @@ func (r Repository) UpdateAccounts(accounts ...*accountstypes.Account) error {
 	queryAffiliates := "SELECT affiliates FROM vipcoin_chain_accounts_accounts WHERE (address IN ($1))"
 
 	for _, acc := range accounts {
-		accountDB, err := toAccountDatabase(acc)
+		accountDB, err := toAccountDatabase(acc, r.cdc)
 		if err != nil {
 			return err
 		}
@@ -168,7 +171,6 @@ func deleteAffiliates(tx *sqlx.Tx, affiliatesID pq.Int64Array) error {
 }
 
 func (r Repository) GetAccounts(accfilter filter.Filter) ([]*accountstypes.Account, error) {
-	var err error
 	query, args := accfilter.Build("vipcoin_chain_accounts_accounts",
 		`address, hash, public_key, kinds, state, extras, affiliates, wallets`)
 
@@ -179,7 +181,10 @@ func (r Repository) GetAccounts(accfilter filter.Filter) ([]*accountstypes.Accou
 
 	accounts := make([]*accountstypes.Account, 0, len(result))
 	for _, acc := range result {
-		account := toAccountDomain(acc)
+		account, err := toAccountDomain(acc)
+		if err != nil {
+			return []*accountstypes.Account{}, err
+		}
 
 		if account.Affiliates, err = getAffiliates(r.db, acc.Affiliates); err != nil {
 			return []*accountstypes.Account{}, err

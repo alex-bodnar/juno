@@ -5,8 +5,13 @@
 package accounts
 
 import (
+	"encoding/base64"
+	"encoding/hex"
+
 	accountstypes "git.ooo.ua/vipcoin/chain/x/accounts/types"
 	extratypes "git.ooo.ua/vipcoin/chain/x/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	"github.com/forbole/bdjuno/v2/database/types"
 	"github.com/lib/pq"
 )
@@ -58,12 +63,18 @@ func fromExtrasDB(extras types.ExtraDB) []*extratypes.Extra {
 }
 
 // toAccountDatabase - mapping func to database model
-func toAccountDatabase(account *accountstypes.Account) (types.DBAccount, error) {
+func toAccountDatabase(account *accountstypes.Account, cdc codec.Marshaler) (types.DBAccount, error) {
+	var pubKey cryptotypes.PubKey
+	if err := cdc.UnpackAny(account.PublicKey, &pubKey); err != nil {
+		return types.DBAccount{}, err
+	}
+
+	publicKey := hex.EncodeToString([]byte(base64.StdEncoding.EncodeToString(pubKey.Bytes())))
+
 	return types.DBAccount{
-		Address: account.Address,
-		Hash:    account.Hash,
-		// TODO: PublicKey converter.
-		PublicKey: account.PublicKey.String(),
+		Address:   account.Address,
+		Hash:      account.Hash,
+		PublicKey: publicKey,
 		Kinds:     toKindsDB(account.Kinds),
 		State:     int32(account.State),
 		Extras:    toExtrasDB(account.Extras),
@@ -72,16 +83,26 @@ func toAccountDatabase(account *accountstypes.Account) (types.DBAccount, error) 
 }
 
 // toAccountDatabase - mapping func to domain model
-func toAccountDomain(account types.DBAccount) *accountstypes.Account {
-	return &accountstypes.Account{
-		Address: account.Address,
-		Hash:    account.Hash,
-		// PublicKey: ,
-		Kinds:   toKindsDomain(account.Kinds),
-		State:   accountstypes.AccountState(account.State),
-		Extras:  fromExtrasDB(account.Extras),
-		Wallets: account.Wallets,
+func toAccountDomain(account types.DBAccount) (*accountstypes.Account, error) {
+	pubKey, err := accountstypes.PubKeyFromString(account.PublicKey)
+	if err != nil {
+		return &accountstypes.Account{}, err
 	}
+
+	pubKeyAny, err := accountstypes.PubKeyToAny(pubKey)
+	if err != nil {
+		return &accountstypes.Account{}, err
+	}
+
+	return &accountstypes.Account{
+		Address:   account.Address,
+		Hash:      account.Hash,
+		PublicKey: pubKeyAny,
+		Kinds:     toKindsDomain(account.Kinds),
+		State:     accountstypes.AccountState(account.State),
+		Extras:    fromExtrasDB(account.Extras),
+		Wallets:   account.Wallets,
+	}, nil
 }
 
 // toKindsDB - mapping func to database model
