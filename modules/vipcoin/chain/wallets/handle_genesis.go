@@ -21,6 +21,6 @@ func (m *Module) HandleGenesis(doc *tmtypes.GenesisDoc, appState map[string]json
 		return fmt.Errorf("error while unmarhshaling wallets state: %s", err)
 	}
 
-	//return m.db.SaveVipcoinWallets(walletsState.Wallets)
+	//return m.db.CreateWallet(walletsState.Wallets)
 	return nil
 }

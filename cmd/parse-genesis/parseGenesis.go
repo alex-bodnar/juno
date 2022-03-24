@@ -34,7 +34,7 @@ func NewParseGenesisCmd(parseCfg *parse.Config) *cobra.Command {
 				modulesToParse = append(modulesToParse, module)
 			}
 
-			// Default to all the modules
+			// DefaultStatus to all the modules
 			if len(modulesToParse) == 0 {
 				modulesToParse = parseCtx.Modules
 			}
